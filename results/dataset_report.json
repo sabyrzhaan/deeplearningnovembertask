@@ -1,0 +1,350 @@
+{
+  "dataset": "african-wildlife.yaml",
+  "classes": [
+    "buffalo",
+    "elephant",
+    "rhino",
+    "zebra"
+  ],
+  "annotation_format": "YOLO txt: class x_center y_center width height (нормировано 0..1)",
+  "split_method": "готовое разбиение датасета (не менялось); затем удаление утечек (см. leaks_cross_split)",
+  "near_duplicate_hash": {
+    "algorithm": "dHash 8x8",
+    "hamming_threshold": 4
+  },
+  "exact_duplicates_across_splits": 20,
+  "near_duplicate_pairs_same_split_allowed": 38,
+  "leaks_cross_split_count": 33,
+  "leaks_cross_split_examples": [
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/1 (124).jpg",
+      "val",
+      "/content/detector/datasets/african-wildlife/images/val/1 (122).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/1 (151).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/1 (103).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/1 (175).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/1 (356).jpg",
+      3
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/1 (229).jpg",
+      "val",
+      "/content/detector/datasets/african-wildlife/images/val/1 (223).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/1 (237).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/1 (365).jpg",
+      2
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/1 (314).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/1 (183).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/1 (315).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/1 (356).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/1 (322).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/1 (128).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/1 (325).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/1 (55).jpg",
+      2
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/1 (355).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/1 (192).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/1 (360).jpg",
+      "val",
+      "/content/detector/datasets/african-wildlife/images/val/1 (334).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/1 (371).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/1 (171).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/1 (70).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/1 (74).jpg",
+      1
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/1 (86).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/1 (128).jpg",
+      1
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/1 (98).jpg",
+      "val",
+      "/content/detector/datasets/african-wildlife/images/val/1 (334).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/2 (237).jpg",
+      "val",
+      "/content/detector/datasets/african-wildlife/images/val/2 (355).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/2 (242).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/2 (270).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/2 (373).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/2 (269).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/3 (116).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/3 (323).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/3 (230).jpg",
+      "val",
+      "/content/detector/datasets/african-wildlife/images/val/3 (226).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/3 (235).jpg",
+      "val",
+      "/content/detector/datasets/african-wildlife/images/val/3 (326).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/3 (275).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/3 (192).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/3 (311).jpg",
+      "val",
+      "/content/detector/datasets/african-wildlife/images/val/3 (364).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/3 (321).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/3 (139).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/3 (342).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/3 (59).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/3 (360).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/3 (213).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/4 (236).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/4 (213).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/4 (253).jpg",
+      "val",
+      "/content/detector/datasets/african-wildlife/images/val/4 (318).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/4 (320).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/4 (266).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/4 (342).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/4 (374).jpg",
+      0
+    ],
+    [
+      "train",
+      "/content/detector/datasets/african-wildlife/images/train/4 (364).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/4 (222).jpg",
+      0
+    ],
+    [
+      "val",
+      "/content/detector/datasets/african-wildlife/images/val/3 (269).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/3 (83).jpg",
+      0
+    ],
+    [
+      "val",
+      "/content/detector/datasets/african-wildlife/images/val/3 (318).jpg",
+      "test",
+      "/content/detector/datasets/african-wildlife/images/test/3 (83).jpg",
+      0
+    ]
+  ],
+  "removed_images": {
+    "train": 31,
+    "val": 2,
+    "test": 0
+  },
+  "splits_raw": {
+    "train": {
+      "images": 1052,
+      "objects": 1931,
+      "per_class": {
+        "buffalo": 399,
+        "elephant": 558,
+        "rhino": 399,
+        "zebra": 575
+      },
+      "background_images_empty_label": 0,
+      "images_without_label_file": 0,
+      "median_box_area_fraction": 0.20947413015199998,
+      "label_problems": {},
+      "problem_examples": []
+    },
+    "val": {
+      "images": 225,
+      "objects": 379,
+      "per_class": {
+        "buffalo": 89,
+        "elephant": 91,
+        "rhino": 85,
+        "zebra": 114
+      },
+      "background_images_empty_label": 0,
+      "images_without_label_file": 0,
+      "median_box_area_fraction": 0.227134153425,
+      "label_problems": {},
+      "problem_examples": []
+    },
+    "test": {
+      "images": 227,
+      "objects": 375,
+      "per_class": {
+        "buffalo": 66,
+        "elephant": 99,
+        "rhino": 75,
+        "zebra": 135
+      },
+      "background_images_empty_label": 0,
+      "images_without_label_file": 0,
+      "median_box_area_fraction": 0.220198645608,
+      "label_problems": {},
+      "problem_examples": []
+    }
+  },
+  "splits_final": {
+    "train": {
+      "images": 1021,
+      "objects": 1881,
+      "per_class": {
+        "buffalo": 379,
+        "elephant": 551,
+        "rhino": 388,
+        "zebra": 563
+      },
+      "background_images_empty_label": 0,
+      "images_without_label_file": 0,
+      "median_box_area_fraction": 0.206453620608,
+      "label_problems": {},
+      "problem_examples": []
+    },
+    "val": {
+      "images": 223,
+      "objects": 377,
+      "per_class": {
+        "buffalo": 89,
+        "elephant": 91,
+        "rhino": 83,
+        "zebra": 114
+      },
+      "background_images_empty_label": 0,
+      "images_without_label_file": 0,
+      "median_box_area_fraction": 0.225674364696,
+      "label_problems": {},
+      "problem_examples": []
+    },
+    "test": {
+      "images": 227,
+      "objects": 375,
+      "per_class": {
+        "buffalo": 66,
+        "elephant": 99,
+        "rhino": 75,
+        "zebra": 135
+      },
+      "background_images_empty_label": 0,
+      "images_without_label_file": 0,
+      "median_box_area_fraction": 0.220198645608,
+      "label_problems": {},
+      "problem_examples": []
+    }
+  }
+}

@@ -1,0 +1,9 @@
+path: /content/detector/datasets/african-wildlife
+train: /content/detector/configs/train_dedup.txt
+val: /content/detector/configs/val_dedup.txt
+test: /content/detector/datasets/african-wildlife/images/test
+names:
+  0: buffalo
+  1: elephant
+  2: rhino
+  3: zebra

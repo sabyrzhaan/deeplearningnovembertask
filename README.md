@@ -1,184 +1,201 @@
-# Детекция африканских животных: дообучение YOLO11n
+# African Wildlife Detection: Fine-tuning YOLO11n
 
-**CSCI1409 Deep Learning — Bonus Project (KBTU, Fall 2026).** Индивидуальная работа.
-**Автор:** `<ФИО>`, ID `<студенческий ID>`
+**CSCI1409 Deep Learning, Bonus Project (KBTU, Fall 2026). Individual work.**
+**Author:** Olzhabay Sabyrzhan, student ID **23B031132**
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/YOUR_USERNAME/YOUR_REPO/blob/main/object_detection.ipynb)
-
-> ⚠️ Всё, что помечено **⏳**, нужно заполнить числами и выводами из **своего** прогона ноутбука. Шаблон не содержит результатов, потому что они появляются только после обучения.
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sabyrzhaan/deeplearningnovembertask/blob/main/object_detection.ipynb)
 
 ---
 
-## 1. Задача
+## 1. Task
 
-Дообучить (fine-tune) предобученный детектор объектов, чтобы находить на фотографиях четырёх животных — **buffalo, elephant, rhino, zebra** — и предсказывать для каждого рамку (bounding box), класс и уверенность (confidence). Репозиторий позволяет другому человеку **с нуля** повторить: загрузку данных → проверку разметки → обучение двух моделей → сравнение → оценку на тесте → показ предсказаний — в Google Colab.
+Fine-tune a pretrained object detector to find four kinds of animals in photographs: **buffalo, elephant, rhino, zebra**. For each object the model predicts a bounding box, a class and a confidence score. The repository lets anyone repeat the whole pipeline in Google Colab from a fresh runtime: data download → label and leakage checks → training two models → comparison → test evaluation → predictions and error analysis.
 
-Что здесь моё, а что взято из готового:
+What is reused and what is mine:
 
-| Компонент | Источник |
+| Component | Source |
 |---|---|
-| Фреймворк и модель | [Ultralytics](https://github.com/ultralytics/ultralytics) `8.4.199`, веса `yolo11n.pt` (предобучены на COCO) — используются как есть |
-| Датасет | Ultralytics African Wildlife (см. раздел 2) |
-| **Мой вклад** | ноутбук `object_detection.ipynb`; `scripts/prepare_data.py` (проверка разметки, поиск утечек между выборками); `scripts/failure_analysis.py` (фиксированная рабочая точка, типы ошибок); `scripts/visualize.py`; `configs/experiments.yaml`; эксперимент, анализ и выводы |
+| Framework and model | [Ultralytics](https://github.com/ultralytics/ultralytics) `8.4.199`, weights `yolo11n.pt` (pretrained on COCO), used as is |
+| Dataset | Ultralytics African Wildlife (section 2) |
+| **My additions** | notebook `object_detection.ipynb`; `scripts/prepare_data.py` (label checks, duplicate detection between splits); `scripts/failure_analysis.py` (metrics at a fixed operating point, error types); `scripts/visualize.py`; `configs/experiments.yaml`; the experiment, analysis and conclusions |
 
-## 2. Датасет
+## 2. Dataset
 
 | | |
 |---|---|
-| Название | Ultralytics **African Wildlife** Detection Dataset |
-| Источник | <https://docs.ultralytics.com/datasets/detect/african-wildlife/> |
-| Автор оригинала | Bianca Ferreira; адаптация для Ultralytics YOLO — Glenn Jocher, Muhammad Rizwan Munawar |
-| Условия использования | Документация датасета указывает **AGPL-3.0**; в блоке цитирования поле лицензии — «Not specified». ⏳ Перед сдачей открой страницу датасета и проверь актуальную формулировку. Код и веса Ultralytics — AGPL-3.0. |
-| Классы (4) | `0: buffalo`, `1: elephant`, `2: rhino`, `3: zebra` |
-| Формат разметки | YOLO txt: файл на изображение, строка на объект: `class x_center y_center width height`, все координаты нормированы на 0–1 |
-| Объём | 1 504 изображения (≈100 МБ), готовое разбиение train 1052 / val 225 / test 227 |
+| Name | Ultralytics **African Wildlife** Detection Dataset |
+| Source | <https://docs.ultralytics.com/datasets/detect/african-wildlife/> |
+| Original author | Bianca Ferreira; adapted for Ultralytics YOLO by Glenn Jocher and Muhammad Rizwan Munawar |
+| Terms of use | The dataset documentation states the **AGPL-3.0** license; the citation block lists the license as "Not specified". Ultralytics code and weights are AGPL-3.0. The dataset is used here for educational purposes. |
+| Classes (4) | `0: buffalo`, `1: elephant`, `2: rhino`, `3: zebra` |
+| Annotation format | YOLO txt: one file per image, one line per object: `class x_center y_center width height`, coordinates normalized to 0–1 |
+| Original size | 1,504 images (about 100 MB); provided split: train 1052 / val 225 / test 227 |
 
-### Количество изображений и объектов по выборкам
+### Images and objects per split (after leakage cleanup)
 
-Данные берутся из `results/dataset_report.json` (создаётся скриптом `scripts/prepare_data.py`).
-
-| Выборка | Изображений | Объектов | buffalo | elephant | rhino | zebra |
+| Split | Images | Objects | buffalo | elephant | rhino | zebra |
 |---|---|---|---|---|---|---|
-| train | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| val | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
-| test | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ | ⏳ |
+| train | 1021 | 1881 | 379 | 551 | 388 | 563 |
+| val | 223 | 377 | 89 | 91 | 83 | 114 |
+| test | 227 | 375 | 66 | 99 | 75 | 135 |
 
-### Разбиение и защита от утечек
+The median box covers about 21–23% of the image area (train 0.206, val 0.226, test 0.220), so objects are mostly large.
 
-* Разбиение **готовое от авторов датасета**, я его не менял, случайность с seed не использовалась. ⏳ Если ты что-то пересобирал — укажи метод и seed.
-* Скрипт ищет изображения-дубликаты между выборками: точные копии (md5) и почти-копии (перцептивный хэш **dHash 8×8**, расстояние Хэмминга ≤ 4). Если картинка из train почти идентична картинке из val/test, она **удаляется из train**, val/test не трогаются (приоритет защиты: test > val > train).
-* Результат проверки: ⏳ найдено пар между выборками: `__`; точных копий: `__`; удалено из train: `__`; из val: `__`.
-* Ограничение: в датасете нет информации об источнике кадров, поэтому «кадры одного видео» отдельно проверить нельзя; почти-дубликаты ловятся только по визуальному сходству.
+### Split method and leakage control
 
-### Проверка разметки
+* The split is the **one provided by the dataset authors**; I did not create a random split with a seed.
+* I checked the split for duplicates between sets: exact copies (md5) and near-duplicates (perceptual hash **dHash 8×8**, Hamming distance ≤ 4).
+* **Result:** **33 pairs** of identical or near-identical images were found in different splits, **20 of them exact copies**. **31** images were removed from train and **2** from val; test was not modified (protection priority: test > val > train). After cleanup: train 1021, val 223, test 227. The remaining file lists are in `configs/train_dedup.txt` and `configs/val_dedup.txt`; the full report is in `results/dataset_report.json`.
+* Limitation: the dataset gives no information about the origin of frames (series, videos), so the requirement about frames from the same video cannot be checked directly; near-duplicates are caught only by visual similarity. The dHash threshold of ≤ 4 may have produced a few false positives among the 13 non-exact pairs; the 20 exact copies cannot be false positives.
 
-Скрипт автоматически проверяет: строки неверного формата, номера классов вне диапазона, координаты вне [0,1], нулевые рамки, повторяющиеся рамки, изображения без файла разметки, пустые разметки (фоновые кадры).
-Результат: ⏳ (скопируй из `results/dataset_report.json`: `label_problems`, `problem_examples`).
-Дополнительно просмотрены глазами изображения с рамками (≥ 5, см. ниже). Наблюдения: ⏳.
+### Label checks
+
+The automatic check (`scripts/prepare_data.py`) found no problems: 0 malformed lines, 0 class ids out of range, 0 coordinates outside [0,1], 0 zero-size or repeated boxes, 0 images without a label file, 0 empty label files. I also inspected images with their boxes visually (see below). Observation: in dense groups of animals (for example the zebras in `test/4 (34).jpg` and `test/4 (75).jpg`) the ground-truth boxes overlap heavily and in places look duplicated, so annotation in such scenes is ambiguous; this may affect the localization scores.
 
 ![Ground truth](results/figures/ground_truth_train.png)
 
-## 3. Окружение и запуск
+## 3. Environment and how to run
 
-**Google Colab (рекомендуется):**
-1. Нажми кнопку **Open in Colab** выше. `Runtime → Change runtime type → T4 GPU`.
-2. В ячейке клонирования укажи `REPO_URL` своего репозитория (если открыл ноутбук по ссылке из этого репозитория, замени `YOUR_USERNAME/YOUR_REPO`).
-3. `Runtime → Run all`. Ноутбук сам поставит зависимости, скачает датасет, обучит обе модели, оценит и покажет предсказания. Ожидаемое время на T4: порядка 10–25 минут (оценка, не измерено — реальное время записано в таблице ниже).
+**Google Colab (recommended):**
+1. Click **Open in Colab** (badge above). `Runtime → Change runtime type → T4 GPU`.
+2. `Runtime → Run all`. The notebook clones the repository, installs dependencies, downloads the dataset, trains both models, evaluates them and shows predictions. If Colab asks for a restart after installing dependencies, restart and run the cells again.
+3. The repository must be public (or otherwise clonable without login).
 
-**Локально:**
+The explanatory text inside the notebook is written in Russian; the code, outputs and this README are what matter for reproduction.
+
+**Locally:**
 ```bash
-git clone <repo> && cd <repo>
+git clone https://github.com/sabyrzhaan/deeplearningnovembertask.git
+cd deeplearningnovembertask
 pip install -r requirements.txt
-python scripts/prepare_data.py          # скачает датасет, создаст configs/data.yaml
-yolo detect train data=configs/data.yaml model=yolo11n.pt epochs=30 imgsz=640   # или запусти ячейки ноутбука
+python scripts/prepare_data.py     # downloads the dataset, creates configs/data.yaml and the report
+# then run the cells of object_detection.ipynb (Jupyter)
 ```
 
-**Зависимости.** `requirements.txt`: `ultralytics==8.4.199` (точная версия); остальное — минимальные версии. Точные версии прогона: `results/environment_freeze.txt`.
-Среда прогона: ⏳ Python `__`, torch `__`, GPU `__`.
+**Dependencies:** `requirements.txt` pins `ultralytics==8.4.199` exactly; other packages have minimum versions. Exact versions of my run: `results/environment_freeze.txt`.
+**My run environment:** Python 3.13.16, torch 2.14.1+cu130, Ultralytics 8.4.199, Tesla T4 GPU (Google Colab).
 
 ## 4. Baseline
 
-| Параметр | Значение |
+| Parameter | Value |
 |---|---|
-| Фреймворк / версия | Ultralytics 8.4.199 |
-| Модель / начальные веса | YOLO11n / `yolo11n.pt` (COCO) |
-| Размер изображения | 640 |
+| Framework / version | Ultralytics 8.4.199 |
+| Model / initial weights | YOLO11n / `yolo11n.pt` (COCO) |
+| Image size | 640 |
 | Batch size | 16 |
-| Эпох | 30 (ранняя остановка выключена, `patience=100`) |
-| Оптимизатор / learning rate | AdamW, `lr0=0.001`, `lrf=0.01` (задан явно: при `optimizer=auto` Ultralytics игнорирует `lr0`) |
+| Epochs | 30 (early stopping disabled: `patience=100`) |
+| Optimizer / learning rate | AdamW, `lr0=0.001`, `lrf=0.01` (set explicitly: with `optimizer=auto` Ultralytics ignores `lr0`) |
 | Seed | 42 (`deterministic=True`) |
-| Время обучения | ⏳ `__` мин |
+| Training time | 9.03 min (Tesla T4) |
 
-Сохранено: полная конфигурация (`configs/experiments.yaml`, `results/runs/<run>/args.yaml`), логи и кривые (`results/runs/<run>/results.csv`, `results.png`), лучший чекпоинт `best.pt` — выбран **по validation** (fitness = 0.1·mAP@0.50 + 0.9·mAP@0.50-0.95 на val).
+Saved: configuration (`configs/experiments.yaml`, `results/runs/<run>/args.yaml`), training logs and curves (`results/runs/<run>/results.csv`, `results.png`), and the best checkpoint `best.pt`. Ultralytics selects it **by validation** (fitness = 0.1·mAP@0.50 + 0.9·mAP@0.50-0.95 on val).
 
-## 5. Контролируемый эксперимент
+## 5. Controlled experiment
 
-**Что меняю:** `imgsz` 640 → **320**. Всё остальное (данные, seed, стартовые веса, оптимизатор, lr, эпохи, batch) одинаково.
+**What changes:** `imgsz` 640 → **320**. Everything else (data, seed, initial weights `yolo11n.pt`, optimizer, learning rate, epochs, batch size) is identical.
 
-**Гипотеза (записана до получения результатов):** ⏳ *перепиши своими словами.* Исходный вариант: уменьшение `imgsz` вдвое даёт ~4× меньше пикселей, поэтому обучение ускорится в 2–4 раза; так как животные в датасете в основном крупные, mAP@0.50 упадёт незначительно (не более ~3 п.п.), а потеря качества сосредоточится на мелких/далёких животных (упадёт recall).
+**Hypothesis (written before seeing results):** halving `imgsz` gives about 4× fewer pixels, so training should be 2–4× faster. Because the animals in this dataset are mostly large (median box about 21% of the frame), mAP@0.50 should drop only slightly (no more than about 3 percentage points), and the loss should be concentrated on small and distant animals (recall should drop).
 
-**Результаты на validation:**
+**Validation results:**
 
-| Запуск | Изменённый параметр | Precision | Recall | mAP@0.50 | Время обучения, мин |
+| Run | Changed setting | Precision | Recall | mAP@0.50 | Training time, min |
 |---|---|---|---|---|---|
-| baseline_640 | — | ⏳ | ⏳ | ⏳ | ⏳ |
-| exp_imgsz320 | imgsz=320 | ⏳ | ⏳ | ⏳ | ⏳ |
+| baseline_640 | none | 0.920 | 0.919 | 0.958 | 9.03 |
+| exp_imgsz320 | imgsz=320 | 0.935 | 0.862 | 0.935 | 5.53 |
 
-(полная таблица: `results/experiment_comparison.csv`; кривые: `results/figures/learning_curves_compare.png`)
+Per-class AP@0.50 (val): baseline: buffalo 0.976, elephant 0.946, rhino 0.968, zebra 0.943; imgsz=320: buffalo 0.953, elephant 0.902, rhino 0.948, zebra 0.938. Inference time on val: 4.01 ms vs 2.78 ms per image.
+Full table: `results/experiment_comparison.csv`; curves: `results/figures/learning_curves_compare.png`.
 
-**Объяснение:** ⏳ подтвердилась ли гипотеза; что с временем и метриками; какие классы пострадали (AP по классам в `results/*_summary.json`); почему; оговорка про один seed — разница в доли процента может быть шумом.
+![Learning curves](results/figures/learning_curves_compare.png)
 
-## 6. Метрики
+**Explanation: the hypothesis was partly confirmed.**
+* *Confirmed:* mAP@0.50 dropped by 2.3 points (below the 3-point threshold); the loss came mainly from recall (−5.7 points), while precision rose (+1.5 points): the model became more conservative, producing fewer boxes that were more often correct.
+* *Not confirmed:* training sped up by 1.63× (9.03 → 5.53 min), not 2–4×. A likely reason (not tested separately): resolution affects only the compute part, while data loading and augmentation on the CPU (`workers=2`), per-epoch validation and fixed overheads do not depend on it. Pure inference time dropped more noticeably (4.01 → 2.78 ms).
+* *The explanation "small objects were lost" is not supported by the per-class numbers:* elephant dropped the most (−4.4 points AP@0.50) even though elephants are large. I did not investigate the cause.
+* *Caveat:* one seed and a small validation set (223 images, 377 objects), so small differences (for example zebra −0.5 points) should not be treated as significant.
 
-* **IoU** (Intersection over Union) — площадь пересечения рамок / площадь объединения; 1 — рамки совпали, 0 — не пересекаются.
-* **Precision** = TP / (TP + FP): какая доля предсказанных рамок верна.
-* **Recall** = TP / (TP + FN): какая доля реальных объектов найдена.
-* **mAP@0.50**: для каждого класса строится кривая precision–recall по всем порогам уверенности; AP — площадь под ней при условии «рамка верна, если IoU ≥ 0.5»; mAP — среднее по классам.
-* Верная детекция (TP): класс совпал и IoU ≥ 0.5; ложная (FP): остальные рамки; пропуск (FN): объект без найденной рамки.
+## 6. Metrics
 
-**Настройки оценки.** Официальный расчёт Ultralytics: `conf=0.001`, NMS IoU = 0.7, порог IoU для mAP@0.50 = 0.5; P и R выдаются в точке порога уверенности, максимизирующей F1. Дополнительно я считаю P/R в **фиксированной рабочей точке** `conf=0.25`, IoU совпадения 0.5.
+* **IoU**: area of intersection of two boxes divided by area of their union; 1 means the boxes coincide, 0 means they do not overlap.
+* **TP**: a box with the correct class and IoU ≥ 0.5 with a not-yet-matched object; **FP**: any other predicted box; **FN**: an object that no box found.
+* **Precision** = TP / (TP + FP): the share of predicted boxes that are correct.
+* **Recall** = TP / (TP + FN): the share of real objects that were found.
+* **mAP@0.50**: for each class a precision–recall curve is built over all confidence thresholds; AP is the area under it, with a box counted as correct if IoU ≥ 0.5; mAP is the mean over classes. **mAP@0.50-0.95** averages over IoU thresholds from 0.5 to 0.95 and judges box accuracy more strictly.
 
-## 7. Финальный результат (test)
+**Evaluation settings.** Official Ultralytics evaluation: `conf=0.001` (almost all boxes are kept so the full curve can be built), NMS IoU = 0.7, IoU threshold for mAP@0.50 = 0.5; P and R are reported at the confidence threshold that maximizes F1 (a threshold chosen on the evaluated set itself). In addition (`scripts/failure_analysis.py`) I compute P/R at a **predefined operating point**: `conf=0.25`, NMS IoU = 0.7, matching IoU = 0.5.
 
-Финальная модель выбрана **только по validation mAP@0.50**: ⏳ `__` (imgsz `__`). Test использован один раз для этой модели. Чекпоинт: `weights/final_best.pt`.
+## 7. Final result (test)
 
-| Метод оценки | Precision | Recall | mAP@0.50 |
+The final model is **baseline_640** (imgsz 640), chosen **only by validation mAP@0.50** (0.958 vs 0.935). The test set was used once, for this model only, and did not influence any training choice. Checkpoint: `weights/final_best.pt`.
+
+| Evaluation method | Precision | Recall | mAP@0.50 |
 |---|---|---|---|
-| Ultralytics (conf=0.001, NMS IoU=0.7, mAP IoU=0.5) | ⏳ | ⏳ | ⏳ |
-| Фиксированный порог (conf=0.25, match IoU=0.5) | ⏳ | ⏳ | — |
+| Ultralytics (conf=0.001, NMS IoU=0.7, mAP IoU=0.5) | 0.952 | 0.947 | **0.974** |
+| Fixed threshold (conf=0.25, NMS IoU=0.7, match IoU=0.5) | 0.875 | 0.955 | n/a |
 
-AP@0.50 по классам: ⏳. Файлы: `results/test_metrics.json`, `results/test_per_image_errors.csv`.
+mAP@0.50-0.95 (Ultralytics): 0.826. Per-class AP@0.50 (test): buffalo 0.955, elephant 0.990, rhino 0.993, zebra 0.959.
 
-### Предсказания на test
+**Error types at conf=0.25** (375 objects): 358 correct boxes, 17 missed objects; 51 false boxes: 24 inaccurate boxes with the right class, 16 on background, 10 duplicates, 1 wrong class. The model almost never confuses classes; the main errors are imprecise localization and extra boxes. Test mAP (0.974) is higher than val mAP (0.958): these are different sets; I do not treat this as a problem, but I also do not read the 1.6-point gap as a real superiority.
+
+Files: `results/test_metrics.json`, `results/test_per_image_errors.csv`.
+
+### Test predictions (box, class, confidence)
 ![Test predictions](results/figures/test_predictions.png)
 
-### Анализ трёх ошибочных случаев
+### Analysis of three failure cases
+I selected the three test images with the most errors at conf=0.25. All three are **groups of zebras** (6–8 objects per frame versus an average of about 1.7 per image). The model never confused classes (`fp_class = 0` in all three cases): the errors are a missed animal and inaccurate or extra boxes.
+
 ![Failure cases](results/figures/failure_cases.png)
 
-| # | Изображение | Тип ошибки | Вероятная причина | Практический следующий шаг |
+| # | Image | What happened | Likely cause | Practical next step |
 |---|---|---|---|---|
-| 1 | ⏳ | ⏳ | ⏳ | ⏳ |
-| 2 | ⏳ | ⏳ | ⏳ | ⏳ |
-| 3 | ⏳ | ⏳ | ⏳ | ⏳ |
+| 1 | `test/4 (34).jpg` | 6 objects, 10 boxes: 5 correct, 1 missed, 4 inaccurate, 1 duplicate | A small dense group of zebras standing very close together: the animals partly occlude each other, and the ground-truth boxes overlap heavily and in places look duplicated, so the borders of individual animals are ambiguous. The model produced several overlapping boxes with moderate confidence (about 0.4–0.5), some of which did not match the labels at IoU ≥ 0.5; a partly hidden animal got no box of its own | Check and unify annotation in dense groups (how boxes are drawn for occluded animals) and add more training images with groups of animals |
+| 2 | `test/4 (75).jpg` | 8 objects, 9 boxes: 7 correct, 1 missed, 1 inaccurate, 1 duplicate | Zebras stand in a tight row at the water with heads down: bodies and stripes merge and the borders between neighbours are barely visible. Some boxes got low confidence (0.31–0.63); one animal in the middle of the row received no box of its own and another got a duplicate | Try a larger model (`yolo11s`) and check whether misses and duplicates in dense rows decrease; also experiment with the NMS threshold |
+| 3 | `test/4 (294).jpg` | 6 objects, 7 boxes: 5 correct, 1 missed, 2 inaccurate | The animals are far from the camera and small. The smallest, most distant zebra at the right edge got no box. Neighbouring zebras in the centre partly overlap, so two boxes (confidence 0.65 and 0.68) matched the labels inaccurately | Add training images with small distant animals and test training at a higher resolution (for example `imgsz=960`) |
 
-## 8. Веса
+**Overall conclusion.** Errors are concentrated in dense groups of zebras: occlusion and merged borders lead to inaccurate and duplicate boxes, and in one case to a missed small distant animal. Buffalo and zebra have the lowest test AP@0.50 (0.955 and 0.959), but I did not check whether this is linked to group scenes (group scenes of other classes were not analysed). Three examples give no statistics: they illustrate typical difficulties and do not prove the causes.
 
-* Финальный чекпоинт (≈5 МБ) лежит в репозитории: [`weights/final_best.pt`](weights/final_best.pt)
-  Прямая ссылка: `https://github.com/YOUR_USERNAME/YOUR_REPO/raw/main/weights/final_best.pt` ⏳ *(проверь, что ссылка открывается без входа в аккаунт, если репозиторий публичный)*.
-* Датасет в репозиторий не входит: он скачивается автоматически (`scripts/prepare_data.py` → `ultralytics.data.utils.check_det_dataset`, ~100 МБ).
-* Промежуточные веса запусков (`results/runs/*/weights/`) не коммитятся (`.gitignore`).
+## 8. Weights
 
-Использование:
+* The final checkpoint (about 5 MB): [`weights/final_best.pt`](weights/final_best.pt)
+  Direct link: <https://github.com/sabyrzhaan/deeplearningnovembertask/raw/main/weights/final_best.pt>
+* The dataset is not part of the repository: it is downloaded automatically (`scripts/prepare_data.py` → `ultralytics.data.utils.check_det_dataset`, about 100 MB).
+* Intermediate run weights (`results/runs/*/weights/`) are not committed (`.gitignore`).
+
+Usage:
 ```python
 from ultralytics import YOLO
 model = YOLO("weights/final_best.pt")
 model.predict("your_image.jpg", conf=0.25, save=True)
 ```
 
-## 9. Структура репозитория
+## 9. Repository structure
 
 ```
-object_detection.ipynb      # главный ноутбук для Colab
-requirements.txt            # версии зависимостей
-configs/experiments.yaml    # настройки обучения, эксперимента и оценки
-configs/data.yaml           # создаётся скриптом подготовки данных
-scripts/prepare_data.py     # загрузка, проверка разметки, поиск утечек, отчёт
-scripts/failure_analysis.py # P/R в фиксированной точке, типы ошибок
-scripts/visualize.py        # GT-боксы, предсказания, кривые, failure cases
-results/                    # логи, метрики (json/csv), графики, отчёт по датасету
-weights/final_best.pt       # финальный чекпоинт
+object_detection.ipynb      # main notebook for Colab
+requirements.txt            # dependency versions
+configs/experiments.yaml    # training, experiment and evaluation settings
+configs/data.yaml           # created by the data preparation script
+configs/*_dedup.txt         # file lists after removing duplicates between splits
+scripts/prepare_data.py     # download, label checks, leakage detection, report
+scripts/failure_analysis.py # P/R at a fixed point, error types
+scripts/visualize.py        # GT boxes, predictions, curves, failure cases
+results/                    # logs, metrics (json/csv), plots, dataset report
+weights/final_best.pt       # final checkpoint
 ```
 
-## 10. Ограничения
+## 10. Limitations
 
-* Один seed на запуск: различия в доли процента между запусками не обязательно значимы; полная детерминированность на GPU не гарантируется — повторный прогон может дать немного другие числа.
-* Малая модель (YOLO11n) и небольшой датасет (4 класса, готовое разбиение): результаты не переносятся на другие виды, условия съёмки и камеры.
-* Проверка утечек основана на визуальном сходстве (dHash); информации о происхождении кадров (видео/серии) у датасета нет.
-* Проверка разметки автоматическая + выборочный просмотр, не полная ручная верификация всех 1 504 изображений.
-* Один контролируемый эксперимент (`imgsz`): выводы относятся только к этому параметру.
-* P/R в «официальной» оценке зависят от порога, подобранного по самой выборке; в фиксированной точке (conf=0.25) значения могут отличаться.
+* One seed per run: differences of a fraction of a percent between runs are not necessarily significant. Full determinism on GPU is not guaranteed, so a rerun may give slightly different numbers.
+* A small model (YOLO11n) and a small dataset (4 classes, about 1,500 images): results do not transfer to other species, shooting conditions or cameras.
+* The dataset contained duplicates between splits (section 2); I removed those I found, but the check is based on visual similarity (dHash) and cannot guarantee that no close frames remain; there is no information about the origin of frames (series, videos).
+* Label checking is automatic plus selective visual inspection, not a full manual verification of all images.
+* One controlled experiment (`imgsz`): conclusions apply only to this parameter; I did not measure the reason for the incomplete training speed-up.
+* P/R in the official Ultralytics evaluation depend on a threshold chosen on the evaluated set itself; at a fixed point (conf=0.25) the values differ (P 0.875 vs 0.952).
+* The error analysis is based on three examples (all zebras in groups) and makes no claim of statistical completeness; the suggested "next steps" were not tested experimentally.
 
-## 11. Источники и использование помощи
+## 11. Sources and use of assistance
 
-* Ultralytics YOLO — <https://github.com/ultralytics/ultralytics> (AGPL-3.0). Датасет African Wildlife — см. раздел 2 (цитирование: Ferreira, B., *African Wildlife Detection Dataset (Ultralytics YOLO Adaptation)*, 2024).
-* **Использование ИИ:** ⏳ *уточни честно и по факту.* Пример: «Claude (Anthropic) использовался для составления структуры репозитория, шаблонов ноутбука, скриптов проверки данных и разбора ошибок, а также для объяснения метрик. Я запустил ноутбук, проверил результаты, написал гипотезу, объяснения и анализ ошибок сам и понимаю код».
+* Ultralytics YOLO: <https://github.com/ultralytics/ultralytics> (AGPL-3.0).
+* Dataset: Ferreira, B., *African Wildlife Detection Dataset (Ultralytics YOLO Adaptation)*, 2024, <https://docs.ultralytics.com/datasets/detect/african-wildlife/>.
+* **Use of AI:** I used **Claude (Anthropic)** to draft the repository skeleton, the notebook, the helper scripts (data checks, error analysis, visualization), the README template and explanations of the metrics. I ran the notebook myself on Google Colab; I checked the results, the experiment conclusions and the error analysis, and I understand the code and metrics and am ready to explain them during the defense.
